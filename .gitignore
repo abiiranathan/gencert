@@ -1,0 +1,6 @@
+*.exe
+gencert
+*.o
+*.a
+build
+*.log
