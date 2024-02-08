@@ -50,9 +50,9 @@ go install github.com/abiiranathan/gencert
 
 Download the latest 64-bit release from Github releases.
 
-[Linux](https://github.com/abiiranathan/gencert/releases/download/v0.1.0/gencert)
+[Linux](https://github.com/abiiranathan/gencert/releases/download/v0.1.1/gencert)
 
-[Windows](https://github.com/abiiranathan/gencert/releases/download/v0.1.0/gencert.exe)
+[Windows](https://github.com/abiiranathan/gencert/releases/download/v0.1.1/gencert.exe)
 
 Convert .crt to .p12
 

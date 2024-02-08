@@ -4,3 +4,7 @@ gencert
 *.a
 build
 *.log
+*.crt
+*.key
+*pem
+*.p12
