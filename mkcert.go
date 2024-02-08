@@ -13,6 +13,8 @@ import (
 	"os"
 	"strings"
 	"time"
+
+	"software.sslmate.com/src/go-pkcs12"
 )
 
 var (
@@ -23,6 +25,9 @@ var (
 	certFile     string
 	keyFile      string
 	organization string
+
+	convertToP12 bool
+	p12File      string
 )
 
 func init() {
@@ -33,6 +38,10 @@ func init() {
 	flag.StringVar(&certFile, "cert", "certfile.crt", "Certificate file")
 	flag.StringVar(&keyFile, "key", "keyfile.key", "Private key file")
 	flag.StringVar(&organization, "org", "Yo Medical Files(U) Ltd", "Organization name")
+
+	// Optional
+	flag.BoolVar(&convertToP12, "p12", false, "Convert certificate and key to PKCS#12 format")
+	flag.StringVar(&p12File, "p12file", "certfile.p12", "PKCS#12 file")
 }
 
 func validateFlags() error {
@@ -57,6 +66,22 @@ func validateFlags() error {
 	if organization == "" {
 		return fmt.Errorf("org cannot be empty")
 	}
+
+	if convertToP12 {
+		if p12File == "" {
+			return fmt.Errorf("p12file cannot be empty when converting to PKCS#12 format")
+		}
+
+		// Check if .crt and .key files exist
+		if _, err := os.Stat(certFile); os.IsNotExist(err) {
+			return fmt.Errorf("certificate file does not exist")
+		}
+
+		if _, err := os.Stat(keyFile); os.IsNotExist(err) {
+			return fmt.Errorf("private key file does not exist")
+		}
+	}
+
 	return nil
 }
 
@@ -65,8 +90,18 @@ func main() {
 
 	if err := validateFlags(); err != nil {
 		fmt.Printf("Error validating flags: %v\n", err)
-		flag.PrintDefaults()
 		os.Exit(1)
+	}
+
+	if convertToP12 {
+		if err := convertCrtToP12(certFile, keyFile, p12File); err != nil {
+			fmt.Printf("Error converting certificate and key to PKCS#12 format: %v\n", err)
+			os.Exit(1)
+		}
+		fmt.Printf("Certificate and key files converted to PKCS#12 format successfully:\n")
+		fmt.Println("-------------------------------------------------")
+		fmt.Printf("PKCS#12 file: %s\n", p12File)
+		os.Exit(0)
 	}
 
 	if err := generateRootCA(rootCAFile, rootCAKey); err != nil {
@@ -235,4 +270,51 @@ func generateCert(hosts []string, validForDays int, organization, rootCAFile, ro
 		return err
 	}
 	return pem.Encode(keyOut, &pem.Block{Type: "PRIVATE KEY", Bytes: privBytes})
+}
+
+// convert .crt to .p12
+func convertCrtToP12(certFile, keyFile, p12File string) error {
+	cert, err := os.ReadFile(certFile)
+	if err != nil {
+		return err
+	}
+	key, err := os.ReadFile(keyFile)
+	if err != nil {
+		return err
+	}
+
+	// Parse certificate
+	certBlock, _ := pem.Decode(cert)
+	if certBlock == nil {
+		return fmt.Errorf("failed to parse certificate")
+	}
+	certificate, err := x509.ParseCertificate(certBlock.Bytes)
+	if err != nil {
+		return err
+	}
+
+	// Parse private key
+	keyBlock, _ := pem.Decode(key)
+	if keyBlock == nil {
+		return fmt.Errorf("failed to parse private key")
+	}
+	privateKey, err := x509.ParsePKCS8PrivateKey(keyBlock.Bytes)
+	if err != nil {
+		return err
+	}
+
+	// Create PKCS#12 file
+	p12, err := os.Create(p12File)
+	if err != nil {
+		return err
+	}
+	defer p12.Close()
+
+	// Convert to PKCS#12
+	pfxData, err := pkcs12.Modern.Encode(privateKey, certificate, nil, "")
+	if err != nil {
+		return err
+	}
+	_, err = p12.Write(pfxData)
+	return err
 }

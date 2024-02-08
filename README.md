@@ -20,6 +20,10 @@ Usage of ./gencert:
         Private key file (default "keyfile.key")
   -org string
         Organization name (default "Yo Medical Files(U) Ltd")
+  -p12
+        Convert certificate and key to PKCS#12 format
+  -p12file string
+        PKCS#12 file (default "certfile.p12")
   -root-ca string
         Root CA certificate file (default "rootCA.crt")
   -root-ca-key string
@@ -49,3 +53,23 @@ Download the latest 64-bit release from Github releases.
 [Linux](https://github.com/abiiranathan/gencert/releases/download/v0.1.0/gencert)
 
 [Windows](https://github.com/abiiranathan/gencert/releases/download/v0.1.0/gencert.exe)
+
+Convert .crt to .p12
+
+```bash
+openssl pkcs12 -export -out certificate.p12 -inkey keyfile.key -in certfile.crt
+```
+
+Or use `gencert` to generate a .p12 file.
+
+```bash
+gencert -hosts "localhost,192.168.43.222" -org "Yo Medical Files(U) Ltd" -cert "certfile.crt" -key "keyfile.key" -root-ca "rootCA.crt" -root-ca-key "rootCA.key"
+```
+
+This will generate .crt and .key files for the given hostnames and IPs.
+It will also generate a root CA certificate and key file.
+Now you can convert the .crt and .key files to .p12 file.
+
+```bash
+gencert -p12 -p12file "certificate.p12" -cert "certfile.crt" -key "keyfile.key"
+```
